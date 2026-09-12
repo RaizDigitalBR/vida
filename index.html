@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vida RPG</title>
+<meta name="theme-color" content="#0b0f1a">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div class="tela-login" id="telaLogin">
+    <div class="icone-grande">🎮</div>
+    <h1>Vida RPG</h1>
+    <p>Seu progresso pessoal, nível por nível</p>
+    <input class="campo" type="email" id="emailLogin" placeholder="E-mail">
+    <input class="campo" type="password" id="senhaLogin" placeholder="Senha">
+    <button class="botao-primario" id="btnEntrar">Entrar</button>
+    <p class="erro-login oculto" id="erroLogin"></p>
+  </div>
+
+  <!-- PAINEL PRINCIPAL -->
+  <div id="painel" class="oculto">
+    <div class="topo">
+      <div class="marca"><span class="icone">🎮</span> Vida RPG</div>
+      <button class="btn-sair" id="btnSair">Sair</button>
+    </div>
+
+    <div class="overall-card" id="overallCard">
+      <div class="overall-rotulo">SEU OVERALL</div>
+      <div class="overall-numero" id="overallNumero">--</div>
+      <div class="overall-tier" id="overallTier">--</div>
+      <div class="overall-destaque" id="overallDestaque">Carregando seus dados...</div>
+    </div>
+
+    <div class="grade-cards" id="gradeCards">
+      <!-- cards das áreas inseridos via JS -->
+    </div>
+  </div>
+
+  <!-- MODAL: ATUALIZAR ÁREA -->
+  <div class="modal-fundo oculto" id="modalFundo">
+    <div class="modal-caixa">
+      <div class="modal-topo">
+        <h3 id="modalTitulo"><span id="modalIcone">💪</span> <span id="modalNome">Físico</span></h3>
+        <button class="modal-fechar" id="modalFechar">&times;</button>
+      </div>
+
+      <div class="modal-valor-atual">
+        Nota atual: <strong id="modalValorAtual">0</strong>/100
+      </div>
+
+      <label class="modal-rotulo">Nova nota (0 a 100)</label>
+      <div class="linha-slider">
+        <input type="range" min="0" max="100" step="1" id="modalSlider">
+        <input type="number" min="0" max="100" step="1" id="modalNumero" class="campo-numero">
+      </div>
+
+      <label class="modal-rotulo">O que mudou? (opcional)</label>
+      <textarea class="campo campo-textarea" id="modalNota" placeholder="Ex: comecei a treinar 4x por semana"></textarea>
+
+      <button class="botao-primario" id="modalSalvar">Salvar evolução</button>
+      <button class="botao-secundario" id="modalVerHistorico">Ver histórico</button>
+    </div>
+  </div>
+
+  <!-- MODAL: HISTÓRICO -->
+  <div class="modal-fundo oculto" id="modalHistoricoFundo">
+    <div class="modal-caixa">
+      <div class="modal-topo">
+        <h3>Histórico: <span id="historicoNome">Físico</span></h3>
+        <button class="modal-fechar" id="historicoFechar">&times;</button>
+      </div>
+      <canvas id="historicoGrafico" width="360" height="140"></canvas>
+      <div class="historico-lista" id="historicoLista">
+        <!-- itens inseridos via JS -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js?v=1"></script>
+</body>
+</html>
