@@ -19,6 +19,8 @@ const AREAS = [
   { id: "trabalho",     nome: "Trabalho",     icone: "💼" },
   { id: "objetivos",    nome: "Objetivos",    icone: "🎯" },
   { id: "investidor",   nome: "Investidor",   icone: "📈" },
+  { id: "goleiro",      nome: "Goleiro",      icone: "🧤" },
+  { id: "saude",        nome: "Saúde",        icone: "🩺" },
 ];
 
 // atributos padrão pra popular cada área na primeira vez (você pode
@@ -30,6 +32,8 @@ const ATRIBUTOS_PADRAO = {
   trabalho: ["Produtividade", "Qualidade de entrega", "Faturamento", "Relacionamento com clientes", "Gestão de tempo", "Divulgação"],
   objetivos: ["Clareza das metas", "Planejamento", "Execução", "Consistência", "Revisão de progresso", "Ajuste de rota"],
   investidor: ["Patrimônio", "Conhecimento financeiro", "Disciplina de aportes", "Diversificação", "Controle de gastos", "Reserva de emergência"],
+  goleiro: ["Elasticidade", "Manejo de bola", "Saída de gol", "Reflexos", "Posicionamento", "Jogo com os pés"],
+  saude: ["Exames médicos em dia", "Saúde bucal", "Hidratação", "Saúde mental/terapia", "Visão", "Prevenção (vacinas e check-ups)"],
 };
 
 const estado = {}; // { [areaId]: { valor, atualizadoEm, baseline30d } }
@@ -247,7 +251,9 @@ function renderAtributos() {
         </div>
         <div class="linha-slider">
           <input type="range" min="0" max="100" step="1" value="${at.valor}" data-slider="${at.id}">
+          <button type="button" class="btn-passo" data-menos="${at.id}">−</button>
           <input type="number" min="0" max="100" step="1" value="${at.valor}" class="campo-numero" data-numero="${at.id}">
+          <button type="button" class="btn-passo" data-mais="${at.id}">+</button>
         </div>
       </div>
     `).join("");
@@ -256,32 +262,53 @@ function renderAtributos() {
   document.getElementById("modalValorAtual").textContent = media(visiveis.map((at) => at.valor));
 }
 
+function aplicarValor(id, v) {
+  v = Math.min(100, Math.max(0, Math.round(v)));
+  const item = atributosAbertos.find((at) => at.id === id);
+  if (!item) return;
+  item.valor = v;
+
+  const linha = document.querySelector(`.linha-atributo[data-id="${id}"]`);
+  if (linha) {
+    linha.querySelector("[data-slider]").value = v;
+    linha.querySelector("[data-numero]").value = v;
+  }
+
+  document.getElementById("modalValorAtual").textContent =
+    media(atributosAbertos.filter((at) => !at.isRemovido).map((at) => at.valor));
+}
+
 document.getElementById("modalAtributos").addEventListener("input", (e) => {
   const idSlider = e.target.getAttribute("data-slider");
   const idNumero = e.target.getAttribute("data-numero");
   const id = idSlider || idNumero;
   if (!id) return;
-
-  let v = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-  const item = atributosAbertos.find((at) => at.id === id);
-  if (item) item.valor = v;
-
-  const linha = document.querySelector(`.linha-atributo[data-id="${id}"]`);
-  linha.querySelector("[data-slider]").value = v;
-  linha.querySelector("[data-numero]").value = v;
-
-  document.getElementById("modalValorAtual").textContent =
-    media(atributosAbertos.filter((at) => !at.isRemovido).map((at) => at.valor));
+  aplicarValor(id, Number(e.target.value) || 0);
 });
 
 document.getElementById("modalAtributos").addEventListener("click", (e) => {
-  const id = e.target.getAttribute("data-remover");
-  if (!id) return;
-  const item = atributosAbertos.find((at) => at.id === id);
+  const idRemover = e.target.getAttribute("data-remover");
+  const idMenos = e.target.getAttribute("data-menos");
+  const idMais = e.target.getAttribute("data-mais");
+
+  if (idMenos) {
+    const item = atributosAbertos.find((at) => at.id === idMenos);
+    if (item) aplicarValor(idMenos, item.valor - 1);
+    return;
+  }
+
+  if (idMais) {
+    const item = atributosAbertos.find((at) => at.id === idMais);
+    if (item) aplicarValor(idMais, item.valor + 1);
+    return;
+  }
+
+  if (!idRemover) return;
+  const item = atributosAbertos.find((at) => at.id === idRemover);
   if (!item) return;
 
   if (item.isNovo) {
-    atributosAbertos = atributosAbertos.filter((at) => at.id !== id);
+    atributosAbertos = atributosAbertos.filter((at) => at.id !== idRemover);
   } else {
     item.isRemovido = true;
   }
