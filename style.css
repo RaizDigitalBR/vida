@@ -327,6 +327,55 @@ body {
   margin-bottom: 0;
 }
 
+.linha-atributo {
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.atributo-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.atributo-nome {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.atributo-remover {
+  border: none;
+  background: none;
+  color: var(--vermelho);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.linha-novo-atributo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0 4px 0;
+}
+
+.campo-inline {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.botao-inline {
+  width: auto;
+  max-width: none;
+  margin-top: 0;
+  padding: 12px 16px;
+  white-space: nowrap;
+}
+
 .historico-lista {
   margin-top: 14px;
   display: flex;

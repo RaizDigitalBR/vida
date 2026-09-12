@@ -3,7 +3,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc,
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc,
   query, where, orderBy, limit, getDocs, onSnapshot, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js?v=2";
@@ -21,8 +21,20 @@ const AREAS = [
   { id: "investidor",   nome: "Investidor",   icone: "📈" },
 ];
 
+// atributos padrão pra popular cada área na primeira vez (você pode
+// adicionar, editar ou remover qualquer um depois, direto na tela)
+const ATRIBUTOS_PADRAO = {
+  fisico: ["Condicionamento físico", "Alimentação", "Sono", "Postura", "Energia diária", "Consistência nos treinos"],
+  mentalidade: ["Foco", "Disciplina", "Controle emocional", "Autoconfiança", "Gestão de ansiedade", "Clareza mental"],
+  estudos: ["Consistência de estudo", "Conhecimento técnico", "Leitura", "Aplicação prática", "Inglês", "Organização"],
+  trabalho: ["Produtividade", "Qualidade de entrega", "Faturamento", "Relacionamento com clientes", "Gestão de tempo", "Divulgação"],
+  objetivos: ["Clareza das metas", "Planejamento", "Execução", "Consistência", "Revisão de progresso", "Ajuste de rota"],
+  investidor: ["Patrimônio", "Conhecimento financeiro", "Disciplina de aportes", "Diversificação", "Controle de gastos", "Reserva de emergência"],
+};
+
 const estado = {}; // { [areaId]: { valor, atualizadoEm, baseline30d } }
 let areaSelecionada = null;
+let atributosAbertos = []; // [{ id, nome, valor, isNovo, isRemovido }]
 let unsubscribers = [];
 
 function tier(v) {
@@ -36,6 +48,11 @@ function formatarData(timestamp) {
   if (!timestamp) return "";
   const d = timestamp.toDate ? timestamp.toDate() : timestamp;
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function media(valores) {
+  if (valores.length === 0) return 50;
+  return Math.round(valores.reduce((s, v) => s + v, 0) / valores.length);
 }
 
 // --- LOGIN ---
@@ -93,6 +110,19 @@ async function iniciarAreas() {
     const snap = await getDoc(ref);
     if (!snap.exists()) {
       await setDoc(ref, { valor: 50, atualizadoEm: serverTimestamp() });
+    }
+
+    // se ainda não tem nenhum atributo cadastrado, semeia a lista padrão
+    const atributosSnap = await getDocs(collection(db, "areas", a.id, "atributos"));
+    if (atributosSnap.empty) {
+      const nomes = ATRIBUTOS_PADRAO[a.id] || [];
+      for (let i = 0; i < nomes.length; i++) {
+        await addDoc(collection(db, "areas", a.id, "atributos"), {
+          nome: nomes[i],
+          valor: 50,
+          ordem: i,
+        });
+      }
     }
 
     // baseline dos últimos 30 dias, pra calcular a seta de evolução
@@ -166,10 +196,10 @@ function renderOverall() {
 
   if (valores.length < AREAS.length) return;
 
-  const media = Math.round(valores.reduce((s, v) => s + v, 0) / valores.length);
-  const t = tier(media);
+  const mediaGeral = media(valores);
+  const t = tier(mediaGeral);
 
-  document.getElementById("overallNumero").textContent = media;
+  document.getElementById("overallNumero").textContent = mediaGeral;
   document.getElementById("overallTier").textContent = t.nome.toUpperCase();
 
   let melhor = AREAS[0], pior = AREAS[0];
@@ -183,7 +213,7 @@ function renderOverall() {
 }
 
 // --- MODAL: ATUALIZAR ÁREA ---
-function abrirModal(areaId) {
+async function abrirModal(areaId) {
   areaSelecionada = areaId;
   const a = AREAS.find((x) => x.id === areaId);
   const dados = estado[areaId] || { valor: 50 };
@@ -191,30 +221,116 @@ function abrirModal(areaId) {
   document.getElementById("modalIcone").textContent = a.icone;
   document.getElementById("modalNome").textContent = a.nome;
   document.getElementById("modalValorAtual").textContent = dados.valor;
-  document.getElementById("modalSlider").value = dados.valor;
-  document.getElementById("modalNumero").value = dados.valor;
   document.getElementById("modalNota").value = "";
+  document.getElementById("novoAtributoNome").value = "";
 
+  const q = query(collection(db, "areas", areaId, "atributos"), orderBy("ordem", "asc"));
+  const snap = await getDocs(q);
+  atributosAbertos = snap.docs.map((d) => ({ id: d.id, nome: d.data().nome, valor: d.data().valor }));
+
+  renderAtributos();
   document.getElementById("modalFundo").classList.remove("oculto");
 }
+
+function renderAtributos() {
+  const container = document.getElementById("modalAtributos");
+  const visiveis = atributosAbertos.filter((at) => !at.isRemovido);
+
+  if (visiveis.length === 0) {
+    container.innerHTML = `<p style="color:#5c6b73; font-size:13px;">Nenhum atributo ainda. Adicione um abaixo.</p>`;
+  } else {
+    container.innerHTML = visiveis.map((at) => `
+      <div class="linha-atributo" data-id="${at.id}">
+        <div class="atributo-topo">
+          <span class="atributo-nome">${at.nome}</span>
+          <button type="button" class="atributo-remover" data-remover="${at.id}">×</button>
+        </div>
+        <div class="linha-slider">
+          <input type="range" min="0" max="100" step="1" value="${at.valor}" data-slider="${at.id}">
+          <input type="number" min="0" max="100" step="1" value="${at.valor}" class="campo-numero" data-numero="${at.id}">
+        </div>
+      </div>
+    `).join("");
+  }
+
+  document.getElementById("modalValorAtual").textContent = media(visiveis.map((at) => at.valor));
+}
+
+document.getElementById("modalAtributos").addEventListener("input", (e) => {
+  const idSlider = e.target.getAttribute("data-slider");
+  const idNumero = e.target.getAttribute("data-numero");
+  const id = idSlider || idNumero;
+  if (!id) return;
+
+  let v = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+  const item = atributosAbertos.find((at) => at.id === id);
+  if (item) item.valor = v;
+
+  const linha = document.querySelector(`.linha-atributo[data-id="${id}"]`);
+  linha.querySelector("[data-slider]").value = v;
+  linha.querySelector("[data-numero]").value = v;
+
+  document.getElementById("modalValorAtual").textContent =
+    media(atributosAbertos.filter((at) => !at.isRemovido).map((at) => at.valor));
+});
+
+document.getElementById("modalAtributos").addEventListener("click", (e) => {
+  const id = e.target.getAttribute("data-remover");
+  if (!id) return;
+  const item = atributosAbertos.find((at) => at.id === id);
+  if (!item) return;
+
+  if (item.isNovo) {
+    atributosAbertos = atributosAbertos.filter((at) => at.id !== id);
+  } else {
+    item.isRemovido = true;
+  }
+  renderAtributos();
+});
+
+document.getElementById("btnAdicionarAtributo").addEventListener("click", () => {
+  const input = document.getElementById("novoAtributoNome");
+  const nome = input.value.trim();
+  if (!nome) return;
+
+  atributosAbertos.push({
+    id: `novo-${Date.now()}`,
+    nome,
+    valor: 50,
+    isNovo: true,
+  });
+  input.value = "";
+  renderAtributos();
+});
 
 document.getElementById("modalFechar").addEventListener("click", () => {
   document.getElementById("modalFundo").classList.add("oculto");
 });
 
-const slider = document.getElementById("modalSlider");
-const numero = document.getElementById("modalNumero");
-slider.addEventListener("input", () => { numero.value = slider.value; });
-numero.addEventListener("input", () => {
-  let v = Math.min(100, Math.max(0, Number(numero.value) || 0));
-  numero.value = v;
-  slider.value = v;
-});
-
 document.getElementById("modalSalvar").addEventListener("click", async () => {
   if (!areaSelecionada) return;
-  const novoValor = Number(numero.value);
   const nota = document.getElementById("modalNota").value.trim();
+
+  let ordem = 0;
+  for (const at of atributosAbertos) {
+    if (at.isRemovido) {
+      await deleteDoc(doc(db, "areas", areaSelecionada, "atributos", at.id));
+    } else if (at.isNovo) {
+      await addDoc(collection(db, "areas", areaSelecionada, "atributos"), {
+        nome: at.nome,
+        valor: at.valor,
+        ordem: ordem++,
+      });
+    } else {
+      await updateDoc(doc(db, "areas", areaSelecionada, "atributos", at.id), {
+        valor: at.valor,
+        ordem: ordem++,
+      });
+    }
+  }
+
+  const visiveis = atributosAbertos.filter((at) => !at.isRemovido);
+  const novoValor = media(visiveis.map((at) => at.valor));
 
   const ref = doc(db, "areas", areaSelecionada);
   await updateDoc(ref, { valor: novoValor, atualizadoEm: serverTimestamp() });
