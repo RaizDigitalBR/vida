@@ -1,11 +1,9 @@
-// Cole aqui a configuração do SEU projeto Firebase.
-// Você encontra isso em: console.firebase.google.com > seu projeto >
-// ícone de engrenagem (Configurações do projeto) > seus apps > SDK setup and configuration.
+// Configuração do projeto Firebase "vida-10873".
 export const firebaseConfig = {
-  apiKey: "COLE_AQUI",
-  authDomain: "COLE_AQUI",
-  projectId: "COLE_AQUI",
-  storageBucket: "COLE_AQUI",
-  messagingSenderId: "COLE_AQUI",
-  appId: "COLE_AQUI"
+  apiKey: "AIzaSyDcCBGUpnka7L0ldHn7ftrNNokDyeTXmFE",
+  authDomain: "vida-10873.firebaseapp.com",
+  projectId: "vida-10873",
+  storageBucket: "vida-10873.firebasestorage.app",
+  messagingSenderId: "601969005925",
+  appId: "1:601969005925:web:063fff3014b7e0bfe87d8c"
 };
